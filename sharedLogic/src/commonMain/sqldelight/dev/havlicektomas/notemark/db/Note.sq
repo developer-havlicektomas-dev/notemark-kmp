@@ -1,0 +1,38 @@
+CREATE TABLE noteEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    username TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    createdAtEpochMs INTEGER NOT NULL,
+    lastEditedAtEpochMs INTEGER NOT NULL
+);
+
+CREATE INDEX noteEntity_username ON noteEntity(username);
+
+notesForUser:
+SELECT * FROM noteEntity
+WHERE username = ?
+ORDER BY lastEditedAtEpochMs DESC;
+
+noteById:
+SELECT * FROM noteEntity
+WHERE id = ?;
+
+upsertNote:
+INSERT OR REPLACE INTO noteEntity(id, username, title, content, createdAtEpochMs, lastEditedAtEpochMs)
+VALUES (?, ?, ?, ?, ?, ?);
+
+deleteNoteById:
+DELETE FROM noteEntity
+WHERE id = ?;
+
+deleteAllForUser:
+DELETE FROM noteEntity
+WHERE username = ?;
+
+-- Logout-without-sync / "Clear local data": drop everything except rows the
+-- sync queue still needs, so pending changes survive until post-login recovery.
+deleteSyncedForUser:
+DELETE FROM noteEntity
+WHERE username = :username
+AND id NOT IN (SELECT noteId FROM syncQueueEntity WHERE username = :username);

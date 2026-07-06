@@ -1,0 +1,41 @@
+-- Pending sync operations. Holds only operation metadata (no note content):
+-- the payload for CREATE/UPDATE is read from noteEntity at sync time.
+CREATE TABLE syncQueueEntity (
+    queueId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    noteId TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    enqueuedAtEpochMs INTEGER NOT NULL
+);
+
+CREATE INDEX syncQueueEntity_username ON syncQueueEntity(username);
+
+pendingForUser:
+SELECT * FROM syncQueueEntity
+WHERE username = ?
+ORDER BY queueId ASC;
+
+pendingCountForUser:
+SELECT COUNT(*) FROM syncQueueEntity
+WHERE username = ?;
+
+operationsForNote:
+SELECT * FROM syncQueueEntity
+WHERE username = ? AND noteId = ?
+ORDER BY queueId ASC;
+
+enqueue:
+INSERT INTO syncQueueEntity(username, noteId, operation, enqueuedAtEpochMs)
+VALUES (?, ?, ?, ?);
+
+deleteByQueueId:
+DELETE FROM syncQueueEntity
+WHERE queueId = ?;
+
+deleteForNote:
+DELETE FROM syncQueueEntity
+WHERE username = ? AND noteId = ?;
+
+clearForUser:
+DELETE FROM syncQueueEntity
+WHERE username = ?;
