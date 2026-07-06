@@ -5,11 +5,13 @@ import dev.havlicektomas.notemark.core.domain.util.DataError
 import dev.havlicektomas.notemark.core.domain.util.Result
 import dev.havlicektomas.notemark.notes.domain.sync.SyncInterval
 import dev.havlicektomas.notemark.notes.domain.sync.SyncManager
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.core.component.KoinComponent
@@ -31,7 +33,13 @@ class IosSyncService : KoinComponent {
     private val syncManager: SyncManager by inject()
     private val connectivityObserver: ConnectivityObserver by inject()
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    // A watcher failure must not reach propagateExceptionFinalResort (which
+    // crashes the process on iOS); log it and keep the app alive instead.
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        println("NoteMark iOS watch failed: $throwable")
+    }
+    private val scope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main + exceptionHandler)
 
     fun watchIsConnected(onChange: (Boolean) -> Unit): IosWatchHandle =
         connectivityObserver.isConnected.watch(onChange)
@@ -60,5 +68,9 @@ class IosSyncService : KoinComponent {
     suspend fun applyStoredSchedule() = syncManager.applyStoredSchedule()
 
     private fun <T> Flow<T>.watch(onChange: (T) -> Unit): IosWatchHandle =
-        IosWatchHandle(onEach { onChange(it) }.launchIn(scope))
+        IosWatchHandle(
+            onEach { onChange(it) }
+                .catch { println("NoteMark iOS watch failed: $it") }
+                .launchIn(scope),
+        )
 }
