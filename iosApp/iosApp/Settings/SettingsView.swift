@@ -130,6 +130,8 @@ struct SettingsView: View {
             }
             .padding(.horizontal, Space.md)
             .padding(.vertical, Space.md)
+            // The whole row is the button, including the Spacer and padding.
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
         .disabled(viewModel.isSyncing)
@@ -158,6 +160,8 @@ struct SettingsView: View {
             }
             .padding(.horizontal, Space.md)
             .padding(.vertical, Space.md)
+            // Without this the Spacer between label and value isn't tappable.
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityIdentifier("autoSyncRow")
@@ -231,6 +235,8 @@ private struct DestructiveButton: View {
                 RoundedRectangle(cornerRadius: Radius.button, style: .continuous)
                     .stroke(AppColor.danger, lineWidth: 1)
             )
+            // Outline only: make the empty interior tappable too.
+            .contentShape(RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
         }
         .buttonStyle(PressScaleStyle())
     }

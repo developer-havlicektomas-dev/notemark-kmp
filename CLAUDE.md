@@ -40,8 +40,8 @@ open iosApp/iosApp.xcodeproj              # only shared scheme: NoteMarkTests (b
   Settings; Reader is pushed in the detail column. Check layout changes on the iPhone Duo simulator closed,
   half-open and open.
 - UI tests need a fresh user per run: `TEST_RUNNER_NM_EMAIL` / `_PASSWORD` / `_USERNAME`. The "Save Password?"
-  prompt can appear late and eat a tap (flaky). `testMilestone4Journey` fails on iOS 27 at "interval picker
-  should open": `confirmationDialog` is a popover there, not `app.sheets[...]` (predates the iOS 27 work).
+  prompt can appear late and eat a tap (flaky). XCUITest taps an element's center: a button label with a
+  `Spacer` or an outline-only background needs `.contentShape(...)` or that tap (and a user's) does nothing.
 - Never build for the simulator with `CODE_SIGNING_ALLOWED=NO`: the session lives in the Keychain,
   an unsigned app can't access it, and login then fails with a misleading "Couldn't reach the server".
 - Base URL is `expect/actual platformBaseUrl` in `core/data/networking/ApiConfig*.kt`:
