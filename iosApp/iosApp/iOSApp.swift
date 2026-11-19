@@ -13,7 +13,7 @@ struct iOSApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .onChange(of: scenePhase) { phase in
+                .onChange(of: scenePhase) { _, phase in
                     // M4: the periodic sync timer only lives while the app runs,
                     // so re-arm it and drain any queued changes every time the
                     // app comes to the foreground (covers launch too).

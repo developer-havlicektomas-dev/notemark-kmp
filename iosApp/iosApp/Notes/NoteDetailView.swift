@@ -3,7 +3,11 @@ import SharedLogic
 
 struct NoteDetailView: View {
     let draft: NoteDraft
+    /// Whether View mode shows a back button. Off when the note sits beside the
+    /// list on a wide window, where there is nothing to go back to.
+    let showsBackButton: Bool
     let onDone: () -> Void
+    let onSaved: () -> Void
     let onOpenReader: (_ title: String, _ content: String) -> Void
 
     @StateObject private var viewModel: NoteDetailViewModel
@@ -12,11 +16,15 @@ struct NoteDetailView: View {
 
     init(
         draft: NoteDraft,
+        showsBackButton: Bool = true,
         onOpenReader: @escaping (_ title: String, _ content: String) -> Void = { _, _ in },
+        onSaved: @escaping () -> Void = {},
         onDone: @escaping () -> Void
     ) {
         self.draft = draft
+        self.showsBackButton = showsBackButton
         self.onDone = onDone
+        self.onSaved = onSaved
         self.onOpenReader = onOpenReader
         _viewModel = StateObject(wrappedValue: NoteDetailViewModel(draft: draft))
     }
@@ -25,18 +33,25 @@ struct NoteDetailView: View {
         VStack(spacing: 0) {
             switch viewModel.mode {
             case .edit:
-                editTopBar
                 saveStatusLine
                 editor
             case .view:
-                viewTopBar
                 reader
             }
         }
         .background(AppColor.bg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .task { await viewModel.reloadFromStore() }
+        .navigationTitle(viewModel.mode == .edit ? "Edit note" : "")
+        .navigationBarTitleDisplayMode(.inline)
+        // Back goes through the view model so unsaved edits get the discard dialog.
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            switch viewModel.mode {
+            case .edit: editToolbar
+            case .view: viewToolbar
+            }
+        }
+        .task { await viewModel.reloadFromStore() }
+        .onChange(of: viewModel.lastSavedAtEpochMs) { _, _ in onSaved() }
         .confirmationDialog("Discard changes?", isPresented: $showDiscardConfirm, titleVisibility: .visible) {
             Button("Discard", role: .destructive) { viewModel.confirmDiscard(exit: onDone) }
             Button("Keep editing", role: .cancel) {}
@@ -81,6 +96,8 @@ struct NoteDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Space.lg + Space.xs)
             .padding(.bottom, Space.sm)
+            .frame(maxWidth: ReadingWidth.max)
+            .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("saveStatusLine")
         }
@@ -114,48 +131,32 @@ struct NoteDetailView: View {
             .padding(.horizontal, Space.lg)
             .padding(.top, Space.md)
             .padding(.bottom, Space.xxl)
+            .frame(maxWidth: ReadingWidth.max)
+            .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
     }
 
-    private var editTopBar: some View {
-        HStack(spacing: Space.sm) {
-            Button(action: attemptBack) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(AppColor.fg)
-                    .frame(width: 40, height: 40)
-            }
-            .buttonStyle(PressScaleStyle(scale: 0.92))
-            .accessibilityIdentifier("editCloseButton")
-
-            Text("Edit note")
-                .font(.nmHeadline)
-                .foregroundStyle(AppColor.fg)
-                .frame(maxWidth: .infinity)
-
+    @ToolbarContentBuilder
+    private var editToolbar: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Close", systemImage: "xmark", action: attemptBack)
+                .accessibilityIdentifier("editCloseButton")
+        }
+        ToolbarItem(placement: .confirmationAction) {
             Button {
                 viewModel.save(onDone: onDone)
             } label: {
-                Group {
-                    if viewModel.isSaving {
-                        ProgressView().tint(AppColor.onAccent)
-                    } else {
-                        Text("Save").font(.nmLabel)
-                    }
+                if viewModel.isSaving {
+                    ProgressView()
+                } else {
+                    Text("Save")
                 }
-                .foregroundStyle(AppColor.onAccent)
-                .frame(height: 36)
-                .padding(.horizontal, Space.lg)
-                .background(AppColor.accent)
-                .clipShape(Capsule())
-                .opacity(viewModel.canSave ? 1 : 0.5)
             }
-            .buttonStyle(PressScaleStyle())
+            .buttonStyle(.glassProminent)
+            .tint(AppColor.accent)
             .disabled(!viewModel.canSave)
         }
-        .padding(.horizontal, Space.md)
-        .frame(height: 56)
     }
 
     // MARK: - View mode
@@ -197,53 +198,40 @@ struct NoteDetailView: View {
             .padding(.horizontal, Space.xxl)
             .padding(.top, Space.sm)
             .padding(.bottom, Space.huge)
+            .frame(maxWidth: ReadingWidth.max)
+            .frame(maxWidth: .infinity)
         }
     }
 
-    private var viewTopBar: some View {
-        HStack(spacing: Space.xs) {
-            Button(action: attemptBack) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(AppColor.fg)
-                    .frame(width: 40, height: 40)
+    @ToolbarContentBuilder
+    private var viewToolbar: some ToolbarContent {
+        if showsBackButton {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Back", systemImage: "chevron.left", action: attemptBack)
+                    .accessibilityIdentifier("detailBackButton")
             }
-            .buttonStyle(PressScaleStyle(scale: 0.92))
-            .accessibilityIdentifier("detailBackButton")
-
-            Spacer()
-
-            Button {
+        }
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            Button("Reader mode", systemImage: "book") {
                 onOpenReader(viewModel.title, viewModel.content)
-            } label: {
-                Image(systemName: "book")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(AppColor.fg)
-                    .frame(width: 40, height: 40)
             }
-            .buttonStyle(PressScaleStyle(scale: 0.92))
             .accessibilityIdentifier("readerButton")
 
-            Button(action: viewModel.startEditing) {
-                Text("Edit")
-                    .font(.nmHeadline)
-                    .foregroundStyle(AppColor.accent)
-                    .padding(.horizontal, Space.sm)
-                    .frame(height: 40)
-            }
-            .buttonStyle(PressScaleStyle(scale: 0.92))
-
+            Button("Edit", action: viewModel.startEditing)
+        }
+        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+        ToolbarItem(placement: .topBarTrailing) {
             Menu {
                 Button("Delete", role: .destructive) { showDeleteConfirm = true }
             } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(AppColor.fg)
-                    .frame(width: 40, height: 40)
+                Label("More", systemImage: "ellipsis")
             }
             .accessibilityIdentifier("noteOptionsButton")
         }
-        .padding(.horizontal, Space.sm)
-        .frame(height: 56)
     }
+}
+
+/// Caps long-form text at a comfortable line length on wide windows.
+enum ReadingWidth {
+    static let max: CGFloat = 680
 }

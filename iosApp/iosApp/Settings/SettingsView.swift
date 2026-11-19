@@ -14,8 +14,6 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
-
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.md) {
                     if !viewModel.isOnline {
@@ -45,13 +43,23 @@ struct SettingsView: View {
                     .accessibilityIdentifier("logoutButton")
                 }
                 .padding(.horizontal, Space.lg)
-                .padding(.top, Space.xl)
+                .padding(.top, Space.md)
                 .padding(.bottom, Space.huge)
+                .frame(maxWidth: FormWidth.max)
+                .frame(maxWidth: .infinity)
             }
         }
         .background(AppColor.bg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        // Back runs onBack so the list re-reads the local DB afterwards.
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Back", systemImage: "chevron.left", action: onBack)
+                    .accessibilityIdentifier("settingsBackButton")
+            }
+        }
         .task { await viewModel.load() }
         .confirmationDialog("Log out?", isPresented: $showLogoutConfirm, titleVisibility: .visible) {
             Button("Sync and log out") { viewModel.syncAndLogout(onLoggedOut: onLoggedOut) }
@@ -122,6 +130,8 @@ struct SettingsView: View {
             }
             .padding(.horizontal, Space.md)
             .padding(.vertical, Space.md)
+            // The whole row is the button, including the Spacer and padding.
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
         .disabled(viewModel.isSyncing)
@@ -150,6 +160,8 @@ struct SettingsView: View {
             }
             .padding(.horizontal, Space.md)
             .padding(.vertical, Space.md)
+            // Without this the Spacer between label and value isn't tappable.
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityIdentifier("autoSyncRow")
@@ -173,27 +185,6 @@ struct SettingsView: View {
     }
 
     // MARK: - Chrome
-
-    private var topBar: some View {
-        HStack(spacing: Space.xs) {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(AppColor.fg)
-                    .frame(width: 40, height: 40)
-            }
-            .buttonStyle(PressScaleStyle(scale: 0.92))
-            .accessibilityIdentifier("settingsBackButton")
-
-            Text("Settings")
-                .font(.nmHeadline)
-                .foregroundStyle(AppColor.fg)
-
-            Spacer()
-        }
-        .padding(.horizontal, Space.sm)
-        .frame(height: 56)
-    }
 
     private var profileCard: some View {
         HStack(spacing: Space.md) {
@@ -244,6 +235,8 @@ private struct DestructiveButton: View {
                 RoundedRectangle(cornerRadius: Radius.button, style: .continuous)
                     .stroke(AppColor.danger, lineWidth: 1)
             )
+            // Outline only: make the empty interior tappable too.
+            .contentShape(RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
         }
         .buttonStyle(PressScaleStyle())
     }

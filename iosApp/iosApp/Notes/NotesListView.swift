@@ -3,6 +3,8 @@ import SharedLogic
 
 struct NotesListView: View {
     @ObservedObject var viewModel: NotesListViewModel
+    /// The note open in the detail column beside the list (wide windows only).
+    var selectedNoteID: String? = nil
     let onOpen: (IosNote) -> Void
     let onCreate: () -> Void
     let onOpenSettings: () -> Void
@@ -12,28 +14,21 @@ struct NotesListView: View {
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: Space.md)]
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            AppColor.bg.ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                header
-                if !viewModel.isOnline {
-                    OfflineBanner(text: "Offline — changes are saved on this device")
-                        .padding(.horizontal, Space.lg)
-                        .padding(.bottom, Space.sm)
-                }
-                if viewModel.notes.isEmpty {
-                    emptyState
-                } else {
-                    grid
-                }
+        VStack(spacing: 0) {
+            if !viewModel.isOnline {
+                OfflineBanner(text: "Offline — changes are saved on this device")
+                    .padding(.horizontal, Space.lg)
+                    .padding(.bottom, Space.sm)
             }
-
-            if !viewModel.notes.isEmpty {
-                createButton
+            if viewModel.notes.isEmpty {
+                emptyState
+            } else {
+                grid
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .background(AppColor.bg.ignoresSafeArea())
+        .navigationTitle("NoteMark")
+        .toolbar { toolbarContent }
         .confirmationDialog(
             "Delete this note?",
             isPresented: deleteBinding,
@@ -51,26 +46,36 @@ struct NotesListView: View {
         Binding(get: { noteToDelete != nil }, set: { if !$0 { noteToDelete = nil } })
     }
 
-    private var header: some View {
-        HStack {
-            Text("NoteMark")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(AppColor.fg)
-            Spacer()
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
             UserAvatar(initials: viewModel.initials.isEmpty ? "?" : viewModel.initials) {
                 onOpenSettings()
             }
+            .accessibilityLabel("Settings")
             .accessibilityIdentifier("avatarButton")
         }
-        .padding(.horizontal, Space.xl)
-        .frame(height: 64)
+        // The avatar is its own filled circle; no glass capsule behind it.
+        .sharedBackgroundVisibility(.hidden)
+
+        if !viewModel.notes.isEmpty {
+            ToolbarSpacer(.flexible, placement: .bottomBar)
+            ToolbarItem(placement: .bottomBar) {
+                Button(action: onCreate) {
+                    Label("Create note", systemImage: "plus")
+                }
+                .buttonStyle(.glassProminent)
+                .tint(AppColor.accent)
+                .accessibilityIdentifier("createNoteButton")
+            }
+        }
     }
 
     private var grid: some View {
         ScrollView {
             LazyVGrid(columns: columns, alignment: .leading, spacing: Space.md) {
                 ForEach(viewModel.notes, id: \.id) { note in
-                    NoteCard(note: note)
+                    NoteCard(note: note, isSelected: note.id == selectedNoteID)
                         .contentShape(Rectangle())
                         .onTapGesture { onOpen(note) }
                         .onLongPressGesture { noteToDelete = note }
@@ -78,7 +83,7 @@ struct NotesListView: View {
             }
             .padding(.horizontal, Space.lg)
             .padding(.top, Space.sm)
-            .padding(.bottom, 120)
+            .padding(.bottom, Space.xxl)
         }
     }
 
@@ -109,21 +114,5 @@ struct NotesListView: View {
         }
         .padding(.horizontal, Space.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var createButton: some View {
-        Button(action: onCreate) {
-            Image(systemName: "plus")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(AppColor.onAccent)
-                .frame(width: 60, height: 60)
-                .background(AppColor.accent)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
-        }
-        .buttonStyle(PressScaleStyle())
-        .accessibilityIdentifier("createNoteButton")
-        .padding(.trailing, Space.xl)
-        .padding(.bottom, Space.xxl)
     }
 }
