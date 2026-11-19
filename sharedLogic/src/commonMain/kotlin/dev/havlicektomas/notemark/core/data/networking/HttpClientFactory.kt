@@ -3,6 +3,7 @@ package dev.havlicektomas.notemark.core.data.networking
 import dev.havlicektomas.notemark.auth.data.RefreshRequest
 import dev.havlicektomas.notemark.auth.data.RefreshResponse
 import dev.havlicektomas.notemark.auth.domain.AuthTokens
+import dev.havlicektomas.notemark.auth.domain.SessionEvents
 import dev.havlicektomas.notemark.auth.domain.SessionStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
@@ -27,6 +28,7 @@ object HttpClientFactory {
     fun create(
         engine: HttpClientEngine,
         sessionStorage: SessionStorage,
+        sessionEvents: SessionEvents,
     ): HttpClient = HttpClient(engine) {
         install(ContentNegotiation) {
             json(
@@ -63,8 +65,14 @@ object HttpClientFactory {
                         )
                         sessionStorage.set(current.copy(tokens = newTokens))
                         BearerTokens(newTokens.accessToken, newTokens.refreshToken)
-                    } else {
+                    } else if (response.status.value in setOf(400, 401, 403)) {
+                        // The refresh token itself was rejected: the session is over.
                         sessionStorage.clear()
+                        sessionEvents.notifyExpired()
+                        null
+                    } else {
+                        // 5xx / 429 / anything else is transient: keep the session so
+                        // the next request can try refreshing again.
                         null
                     }
                 }

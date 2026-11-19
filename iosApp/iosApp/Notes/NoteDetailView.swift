@@ -35,6 +35,7 @@ struct NoteDetailView: View {
         }
         .background(AppColor.bg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .task { await viewModel.reloadFromStore() }
         .navigationBarBackButtonHidden(true)
         .confirmationDialog("Discard changes?", isPresented: $showDiscardConfirm, titleVisibility: .visible) {
             Button("Discard", role: .destructive) { viewModel.confirmDiscard(exit: onDone) }

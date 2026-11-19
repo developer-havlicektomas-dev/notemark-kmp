@@ -4,6 +4,7 @@ import dev.havlicektomas.notemark.auth.data.DefaultAuthRepository
 import dev.havlicektomas.notemark.auth.data.EncryptedSessionStorage
 import dev.havlicektomas.notemark.auth.data.KtorAuthDataSource
 import dev.havlicektomas.notemark.auth.domain.AuthRepository
+import dev.havlicektomas.notemark.auth.domain.SessionEvents
 import dev.havlicektomas.notemark.auth.domain.SessionStorage
 import dev.havlicektomas.notemark.auth.domain.UserDataValidator
 import dev.havlicektomas.notemark.core.data.networking.HttpClientFactory
@@ -27,7 +28,8 @@ import org.koin.dsl.module
 
 val coreDataModule = module {
     single { httpClientEngine() }
-    single { HttpClientFactory.create(engine = get(), sessionStorage = get()) }
+    single { SessionEvents() }
+    single { HttpClientFactory.create(engine = get(), sessionStorage = get(), sessionEvents = get()) }
     single<SessionStorage> {
         EncryptedSessionStorage(
             settings = get(SecureSettings),

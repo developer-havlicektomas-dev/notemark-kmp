@@ -95,13 +95,9 @@ suspend inline fun safeCallEmpty(
         if (e is CancellationException) throw e
         return Result.Error(DataError.Network.UNKNOWN)
     }
-    return when (response.status.value) {
+    return when (val status = response.status.value) {
         in 200..299 -> Result.Success(Unit)
-        400 -> Result.Error(DataError.Network.BAD_REQUEST)
-        401 -> Result.Error(DataError.Network.UNAUTHORIZED)
-        409 -> Result.Error(DataError.Network.CONFLICT)
-        in 500..599 -> Result.Error(DataError.Network.SERVER_ERROR)
-        else -> Result.Error(DataError.Network.UNKNOWN)
+        else -> Result.Error(statusToError(status))
     }
 }
 
@@ -126,16 +122,30 @@ suspend inline fun <reified T> safeCall(
 
 suspend inline fun <reified T> responseToResult(
     response: HttpResponse,
-): Result<T, DataError.Network> = when (response.status.value) {
-    in 200..299 -> Result.Success(response.body<T>())
-    400 -> Result.Error(DataError.Network.BAD_REQUEST)
-    401 -> Result.Error(DataError.Network.UNAUTHORIZED)
-    403 -> Result.Error(DataError.Network.FORBIDDEN)
-    404 -> Result.Error(DataError.Network.NOT_FOUND)
-    408 -> Result.Error(DataError.Network.REQUEST_TIMEOUT)
-    409 -> Result.Error(DataError.Network.CONFLICT)
-    413 -> Result.Error(DataError.Network.PAYLOAD_TOO_LARGE)
-    429 -> Result.Error(DataError.Network.TOO_MANY_REQUESTS)
-    in 500..599 -> Result.Error(DataError.Network.SERVER_ERROR)
-    else -> Result.Error(DataError.Network.UNKNOWN)
+): Result<T, DataError.Network> = when (val status = response.status.value) {
+    in 200..299 -> try {
+        // Reading the body can fail too (unexpected JSON, an HTML page from a
+        // proxy, a dropped connection); it must become an error, not a throw.
+        Result.Success(response.body<T>())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Result.Error(DataError.Network.NO_INTERNET)
+    } catch (e: Exception) {
+        Result.Error(DataError.Network.SERIALIZATION)
+    }
+    else -> Result.Error(statusToError(status))
+}
+
+fun statusToError(status: Int): DataError.Network = when (status) {
+    400 -> DataError.Network.BAD_REQUEST
+    401 -> DataError.Network.UNAUTHORIZED
+    403 -> DataError.Network.FORBIDDEN
+    404 -> DataError.Network.NOT_FOUND
+    408 -> DataError.Network.REQUEST_TIMEOUT
+    409 -> DataError.Network.CONFLICT
+    413 -> DataError.Network.PAYLOAD_TOO_LARGE
+    429 -> DataError.Network.TOO_MANY_REQUESTS
+    in 500..599 -> DataError.Network.SERVER_ERROR
+    else -> DataError.Network.UNKNOWN
 }

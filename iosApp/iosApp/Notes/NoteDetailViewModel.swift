@@ -84,10 +84,30 @@ final class NoteDetailViewModel: ObservableObject {
     }
 
     func startEditing() {
-        sessionTitle = title
-        sessionContent = content
-        savedDuringSession = false
-        mode = .edit
+        Task {
+            // Edit the latest stored version: a sync may have updated the note
+            // since it was opened, and autosave would otherwise overwrite that.
+            await reloadFromStore()
+            sessionTitle = title
+            sessionContent = content
+            savedDuringSession = false
+            mode = .edit
+        }
+    }
+
+    /// Replaces the on-screen note with the version in the local DB. The draft
+    /// passed in is a list snapshot that can be older than what sync stored.
+    /// Only runs for existing notes in View mode, so it never clobbers edits.
+    func reloadFromStore() async {
+        guard !draft.isNew, mode == .view else { return }
+        guard let note = try? await notesService.getNote(id: draft.id) else { return }
+        setProgrammatically {
+            title = note.title
+            content = note.content
+        }
+        createdAtEpochMs = note.createdAtEpochMs
+        lastEditedAtEpochMs = note.lastEditedAtEpochMs
+        lastSavedAtEpochMs = note.lastEditedAtEpochMs
     }
 
     // MARK: - Autosave (M4)

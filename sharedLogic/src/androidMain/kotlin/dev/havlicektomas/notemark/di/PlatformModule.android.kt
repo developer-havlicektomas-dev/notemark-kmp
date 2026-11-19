@@ -1,5 +1,7 @@
 package dev.havlicektomas.notemark.di
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import app.cash.sqldelight.db.SqlDriver
@@ -23,17 +25,32 @@ actual val platformModule: Module = module {
     single<SyncScheduler> { WorkManagerSyncScheduler(androidContext()) }
     single<Settings> {
         val context = androidContext()
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        val prefs = EncryptedSharedPreferences.create(
-            context,
-            "notemark_secure_prefs",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+        val prefs = try {
+            createEncryptedPrefs(context)
+        } catch (e: Exception) {
+            // The file can't be decrypted with this device's Keystore key, e.g. it
+            // was restored from a backup or transfer taken before backup_rules.xml
+            // excluded it. Start fresh (the user logs in again) instead of crashing
+            // on every launch.
+            context.deleteSharedPreferences(SECURE_PREFS_NAME)
+            createEncryptedPrefs(context)
+        }
         SharedPreferencesSettings(prefs)
     }
     single<Settings>(SecureSettings) { get<Settings>() }
+}
+
+private const val SECURE_PREFS_NAME = "notemark_secure_prefs"
+
+private fun createEncryptedPrefs(context: Context): SharedPreferences {
+    val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+    return EncryptedSharedPreferences.create(
+        context,
+        SECURE_PREFS_NAME,
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+    )
 }

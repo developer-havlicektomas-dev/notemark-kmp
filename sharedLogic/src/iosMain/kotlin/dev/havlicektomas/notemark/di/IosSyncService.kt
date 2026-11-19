@@ -54,10 +54,12 @@ class IosSyncService : KoinComponent {
         syncManager.pendingChangesCount.watch(onChange)
 
     /** Full two-way sync; returns the error or `null` on success. */
+    @Throws(Exception::class)
     suspend fun syncNow(): DataError.Network? =
         (syncManager.syncNow() as? Result.Error)?.error
 
     /** Persists the interval and (re)schedules or cancels the periodic timer. */
+    @Throws(Exception::class)
     suspend fun setSyncInterval(interval: SyncInterval) =
         syncManager.setSyncInterval(interval)
 
@@ -65,6 +67,7 @@ class IosSyncService : KoinComponent {
     fun requestBackgroundSync() = syncManager.requestBackgroundSync()
 
     /** Re-arms the periodic timer from the stored interval (call on app start). */
+    @Throws(Exception::class)
     suspend fun applyStoredSchedule() = syncManager.applyStoredSchedule()
 
     private fun <T> Flow<T>.watch(onChange: (T) -> Unit): IosWatchHandle =
