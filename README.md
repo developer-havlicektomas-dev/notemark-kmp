@@ -117,8 +117,12 @@ To build from the command line for a simulator:
 cd iosApp
 xcodebuild -scheme NoteMarkTests -sdk iphonesimulator \
   -destination "id=<simulator-udid>" \
-  -configuration Debug CODE_SIGNING_ALLOWED=NO -derivedDataPath build build-for-testing
+  -configuration Debug -derivedDataPath build build-for-testing
 ```
+
+Don't add `CODE_SIGNING_ALLOWED=NO`: the session tokens are stored in the Keychain, which an
+unsigned app can't use, so login fails with "Couldn't reach the server". The default ad-hoc
+simulator signing is enough.
 
 ## Libraries used
 

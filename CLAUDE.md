@@ -31,6 +31,8 @@ open iosApp/iosApp.xcodeproj              # only shared scheme: NoteMarkTests (b
 
 - Xcode's "Compile Kotlin Framework" build phase runs `./gradlew :sharedLogic:embedAndSignAppleFrameworkForXcode`.
 - iOS deployment target is **18.2**.
+- Never build for the simulator with `CODE_SIGNING_ALLOWED=NO`: the session lives in the Keychain,
+  an unsigned app can't access it, and login then fails with a misleading "Couldn't reach the server".
 - Base URL is `expect/actual platformBaseUrl` in `core/data/networking/ApiConfig*.kt`:
   Android emulator `http://10.0.2.2:8080`, iOS simulator `http://localhost:8080`.
   Android allows cleartext via `usesCleartextTraffic="true"`.
