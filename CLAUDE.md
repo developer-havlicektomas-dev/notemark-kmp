@@ -9,8 +9,13 @@ Companion backend: `../notemark-api` (Spring Boot, in-memory, `http://localhost:
 |---|---|
 | `:sharedLogic` | Domain + data: Ktor, Koin, SQLDelight, multiplatform-settings. **Compose-free.** Has `androidMain` / `iosMain` actuals. Builds the static `SharedLogic` framework for iOS. |
 | `:sharedUI` | Compose Multiplatform screens, MVI ViewModels, design system, type-safe navigation. **Used only by Android.** |
-| `:androidApp` | `NoteMarkApplication` (`startKoin`, kicks off sync) + `MainActivity`. |
-| `iosApp/` | **Native SwiftUI** app. Does NOT use `:sharedUI`. Talks to Kotlin through facades in `sharedLogic/src/iosMain/.../di/` (`KoinIos.kt` → `initKoinIos()`, `IosAuthService`; `IosNotesService`; `IosSyncService`). |
+| `:androidApp` | `NoteMarkApplication` (`startKoin`, kicks off sync) + `MainActivity` + App Functions (`appfunctions/`: `BaseNotesAppFunctionService`, KSP generates `NotesAppFunctionService`). |
+| `iosApp/` | **Native SwiftUI** app. Does NOT use `:sharedUI`. Talks to Kotlin through facades in `sharedLogic/src/iosMain/.../di/` (`KoinIos.kt` → `initKoinIos()`, `IosAuthService`; `IosNotesService`; `IosSyncService`; `IosNoteCommands`). App Intents + `NoteAppEntity` + App Shortcuts live in `iosApp/iosApp/Intents/`. |
+
+**Assistant actions** (Android App Functions, iOS App Intents) must go through `NoteCommands`
+(`sharedLogic/.../notes/domain/commands/`), which applies the editor's rules (trimmed, non-blank title) and
+writes via `OfflineFirstNotesRepository` so changes are queued for sync. `initKoinIos()` is idempotent
+because an intent can run before the app's own launch code. Keep the Android functions and iOS intents in step.
 
 Feature packages follow `<feature>/{domain,data,presentation}` under `dev.havlicektomas.notemark`
 (features: `auth`, `notes`, `settings`, plus `core`).
@@ -25,7 +30,7 @@ Requires JDK 17+, Android SDK (compileSdk 37, targetSdk 37, min 29), Xcode. Star
 
 ```bash
 ./gradlew :androidApp:assembleDebug
-./gradlew :sharedLogic:allTests          # no Kotlin tests exist yet
+./gradlew :sharedLogic:allTests          # shared unit tests (commonTest, e.g. NoteCommandsTest)
 open iosApp/iosApp.xcodeproj              # only shared scheme: NoteMarkTests (builds app + UI tests)
 ```
 
