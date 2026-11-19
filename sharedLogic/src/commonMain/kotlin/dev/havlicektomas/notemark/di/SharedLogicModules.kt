@@ -18,6 +18,7 @@ import dev.havlicektomas.notemark.notes.data.sync.NotesSyncEngine
 import dev.havlicektomas.notemark.notes.data.sync.SqlDelightSyncQueueDataSource
 import dev.havlicektomas.notemark.notes.data.sync.SyncMetadataStore
 import dev.havlicektomas.notemark.notes.domain.NotesRepository
+import dev.havlicektomas.notemark.notes.domain.commands.NoteCommands
 import dev.havlicektomas.notemark.notes.domain.sync.SyncManager
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.auth.authProvider
@@ -58,4 +59,5 @@ val notesDataModule = module {
     singleOf(::NotesSyncEngine)
     singleOf(::DefaultSyncManager) bind SyncManager::class
     singleOf(::OfflineFirstNotesRepository) bind NotesRepository::class
+    single { NoteCommands(notesRepository = get(), sessionStorage = get()) }
 }

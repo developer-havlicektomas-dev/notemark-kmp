@@ -14,9 +14,22 @@ SELECT * FROM noteEntity
 WHERE username = ?
 ORDER BY lastEditedAtEpochMs DESC;
 
+-- Case-insensitive (ASCII) substring search over title and content. The caller
+-- escapes `%`, `_` and `\` in the pattern, hence ESCAPE '\'.
+searchNotesForUser:
+SELECT * FROM noteEntity
+WHERE username = :username
+AND (title LIKE :pattern ESCAPE '\' OR content LIKE :pattern ESCAPE '\')
+ORDER BY lastEditedAtEpochMs DESC
+LIMIT :limit;
+
 noteById:
 SELECT * FROM noteEntity
 WHERE id = ?;
+
+noteByIdForUser:
+SELECT * FROM noteEntity
+WHERE id = ? AND username = ?;
 
 upsertNote:
 INSERT OR REPLACE INTO noteEntity(id, username, title, content, createdAtEpochMs, lastEditedAtEpochMs)

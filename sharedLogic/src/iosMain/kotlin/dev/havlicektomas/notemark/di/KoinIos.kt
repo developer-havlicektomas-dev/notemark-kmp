@@ -14,14 +14,18 @@ import dev.havlicektomas.notemark.core.domain.util.DataError
 import dev.havlicektomas.notemark.core.domain.util.Result
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.mp.KoinPlatformTools
 import org.koin.core.context.startKoin
 
 /**
  * Entry point the SwiftUI app calls once at launch to wire up the shared
  * domain + data layer. Mirrors the Android `startKoin` in NoteMarkApplication,
  * minus the Compose presentation module (iOS has its own SwiftUI screens).
+ * Safe to call more than once; later calls are no-ops.
  */
 fun initKoinIos() {
+    // Idempotent: App Intents can run before (or without) the SwiftUI app's init.
+    if (KoinPlatformTools.defaultContext().getOrNull() != null) return
     startKoin {
         modules(
             platformModule,

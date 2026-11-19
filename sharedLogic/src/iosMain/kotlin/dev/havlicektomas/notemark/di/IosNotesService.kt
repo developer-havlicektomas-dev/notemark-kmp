@@ -90,12 +90,12 @@ class IosNotesService : KoinComponent {
 
     private fun <T> Result<T, DataError.Network>.errorOrNull(): DataError.Network? =
         (this as? Result.Error)?.error
-
-    private fun Note.toIos(): IosNote = IosNote(
-        id = id,
-        title = title,
-        content = content,
-        createdAtEpochMs = createdAt.toEpochMilliseconds(),
-        lastEditedAtEpochMs = lastEditedAt.toEpochMilliseconds(),
-    )
 }
+
+internal fun Note.toIos(): IosNote = IosNote(
+    id = id,
+    title = title,
+    content = content,
+    createdAtEpochMs = createdAt.toEpochMilliseconds(),
+    lastEditedAtEpochMs = lastEditedAt.toEpochMilliseconds(),
+)

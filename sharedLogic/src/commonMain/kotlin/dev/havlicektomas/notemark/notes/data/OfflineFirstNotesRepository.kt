@@ -43,7 +43,17 @@ class OfflineFirstNotesRepository(
 
     override suspend fun fetchNotes(): EmptyResult<DataError.Network> = syncEngine.sync()
 
-    override suspend fun getNote(id: String): Note? = local.getNote(id)
+    // Scoped to the logged-in user: rows of a previous user can linger locally
+    // while their pending changes wait for upload (see deleteSyncedForUser).
+    override suspend fun getNote(id: String): Note? {
+        val username = sessionStorage.get()?.username ?: return null
+        return local.getNoteForUser(id, username)
+    }
+
+    override suspend fun searchNotes(query: String, limit: Int): List<Note> {
+        val username = sessionStorage.get()?.username ?: return emptyList()
+        return local.searchNotes(username, query, limit)
+    }
 
     override suspend fun upsertNote(note: Note): EmptyResult<DataError.Network> {
         val username = sessionStorage.get()?.username

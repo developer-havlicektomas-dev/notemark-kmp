@@ -22,8 +22,21 @@ class SqlDelightNotesDataSource(database: NoteMarkDatabase) {
             .mapToList(Dispatchers.IO)
             .map { entities -> entities.map { it.toNote() } }
 
+    suspend fun searchNotes(username: String, query: String, limit: Int): List<Note> =
+        withContext(Dispatchers.IO) {
+            queries.searchNotesForUser(
+                username = username,
+                pattern = "%${query.escapeLikePattern()}%",
+                limit = limit.toLong(),
+            ).executeAsList().map { it.toNote() }
+        }
+
     suspend fun getNote(id: String): Note? = withContext(Dispatchers.IO) {
         queries.noteById(id).executeAsOneOrNull()?.toNote()
+    }
+
+    suspend fun getNoteForUser(id: String, username: String): Note? = withContext(Dispatchers.IO) {
+        queries.noteByIdForUser(id, username).executeAsOneOrNull()?.toNote()
     }
 
     suspend fun upsertNote(username: String, note: Note) = withContext(Dispatchers.IO) {
@@ -49,6 +62,10 @@ class SqlDelightNotesDataSource(database: NoteMarkDatabase) {
         queries.deleteAllForUser(username)
     }
 }
+
+/** Escapes LIKE wildcards so user input matches literally (paired with `ESCAPE '\'` in Note.sq). */
+private fun String.escapeLikePattern(): String =
+    replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 private fun NoteEntity.toNote(): Note = Note(
     id = id,

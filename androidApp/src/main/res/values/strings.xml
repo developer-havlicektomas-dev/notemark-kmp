@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">NoteMark</string>
+    <string name="app_functions_display_description">Create, update and find your NoteMark notes</string>
 </resources>

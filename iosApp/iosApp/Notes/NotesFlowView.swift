@@ -38,6 +38,9 @@ struct NotesFlowView: View {
     @State private var detailPath: [NotesRoute] = []
     @State private var preferredColumn: NavigationSplitViewColumn = .sidebar
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
+    /// Notes opened or changed by App Intents (Siri, Shortcuts).
+    private let navigator = NoteNavigator.shared
 
     private var isCollapsed: Bool { horizontalSizeClass == .compact }
 
@@ -95,6 +98,32 @@ struct NotesFlowView: View {
             }
         }
         .task { await listVM.load() }
+        .onChange(of: navigator.pendingNoteID, initial: true) { _, id in
+            guard let id else { return }
+            navigator.pendingNoteID = nil
+            Task { await openFromIntent(noteID: id) }
+        }
+        .onChange(of: navigator.notesChangedToken) {
+            Task { await listVM.refreshLocal() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Intents can create or edit notes while the app is in the
+            // background; show those changes when the user comes back.
+            if phase == .active { Task { await listVM.refreshLocal() } }
+        }
+    }
+
+    private func openFromIntent(noteID: String) async {
+        guard let note = try? await IosNotesService().getNote(id: noteID) else { return }
+        await listVM.refreshLocal()
+        show(.note(NoteDraft(
+            id: note.id,
+            title: note.title,
+            content: note.content,
+            isNew: false,
+            createdAtEpochMs: note.createdAtEpochMs,
+            lastEditedAtEpochMs: note.lastEditedAtEpochMs
+        ), instance: UUID()))
     }
 
     private var selectedNoteID: String? {

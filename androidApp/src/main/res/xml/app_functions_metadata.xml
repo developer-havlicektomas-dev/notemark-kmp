@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Linked from AndroidManifest.xml (android.app.appfunctions.app_metadata). Read by agents
+     such as Gemini as context for planning calls to NoteMark's App Functions. -->
+<AppFunctionAppMetadata xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:displayDescription="@string/app_functions_display_description"
+    app:instructions="NoteMark stores the user's text notes. Each note has an id, a title and a content. To change an existing note, first call findNotes to get its id, then call updateNote with that id. updateNote replaces the content: to append text, call getNote, combine the old and new text, and pass the result. findNotes returns only a preview of each note's content; call getNote for the full text. If a function reports that the user is not logged in, ask them to open NoteMark and log in." />

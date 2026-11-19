@@ -17,7 +17,14 @@ interface NotesRepository {
     /** Runs a full two-way sync (upload pending changes, then pull remote). */
     suspend fun fetchNotes(): EmptyResult<DataError.Network>
 
+    /** The logged-in user's note with [id], or null (also when logged out). */
     suspend fun getNote(id: String): Note?
+
+    /**
+     * Notes of the logged-in user whose title or content contains [query]
+     * (case-insensitive), newest edit first, at most [limit]. Local only.
+     */
+    suspend fun searchNotes(query: String, limit: Int): List<Note>
 
     /**
      * Creates or updates a note locally and enqueues the change for upload.
