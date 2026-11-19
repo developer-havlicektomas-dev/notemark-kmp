@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and lower (auto backup). The encrypted session prefs can't be
+     restored: their Keystore key isn't backed up, so a restored copy can't be
+     decrypted. Excluding them means a restored app just asks to log in again. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="notemark_secure_prefs.xml" />
+</full-backup-content>

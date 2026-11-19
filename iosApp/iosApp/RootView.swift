@@ -1,4 +1,5 @@
 import SwiftUI
+import SharedLogic
 
 /// Top-level app phases. Switching phase tears down the previous navigation
 /// stack entirely — which is how the spec's "clear auth flow after login" and
@@ -17,6 +18,8 @@ private enum AuthRoute: Hashable {
 
 struct RootView: View {
     @State private var phase: AppPhase
+    /// Watches for the backend rejecting the refresh token (session cleared).
+    @State private var sessionExpiryWatch: IosWatchHandle?
 
     init() {
         // Debug hooks for screenshot verification: `-screen login|register`
@@ -59,6 +62,13 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: phase)
+        .onAppear {
+            guard sessionExpiryWatch == nil else { return }
+            sessionExpiryWatch = IosAuthService().watchSessionExpired {
+                // Every request would now fail; send the user back to log in.
+                if phase == .notes { phase = .auth }
+            }
+        }
     }
 }
 

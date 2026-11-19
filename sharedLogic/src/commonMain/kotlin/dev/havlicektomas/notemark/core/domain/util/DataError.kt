@@ -19,6 +19,8 @@ sealed interface DataError : Error {
 
     enum class Local : DataError {
         DISK_FULL,
+        /** The secure store (Keychain / EncryptedSharedPreferences) rejected a read or write. */
+        SECURE_STORAGE,
         NOT_FOUND,
         UNKNOWN,
     }

@@ -32,6 +32,18 @@ func authMessage(for error: DataErrorNetwork, flow: AuthFlow) -> String {
     }
 }
 
+/// Login can also fail after the server accepted the credentials, when the
+/// session can't be written to the Keychain (e.g. an unsigned simulator build).
+func loginMessage(for error: DataError) -> String {
+    if let network = error as? DataErrorNetwork {
+        return authMessage(for: network, flow: .login)
+    }
+    if let local = error as? DataErrorLocal, local.name == "SECURE_STORAGE" {
+        return "Logged in, but couldn't save your session securely on this device. Try again."
+    }
+    return "Couldn't log in. Try again."
+}
+
 /// Fallback for an unexpected thrown error (e.g. cancellation, connection refused).
 func genericAuthMessage(for flow: AuthFlow) -> String {
     switch flow {

@@ -11,6 +11,7 @@ import dev.havlicektomas.notemark.notes.data.toNote
 import dev.havlicektomas.notemark.notes.data.toRequest
 import dev.havlicektomas.notemark.notes.domain.Note
 import dev.havlicektomas.notemark.notes.domain.sync.SyncOperation
+import dev.havlicektomas.notemark.notes.domain.sync.isPermanentSyncFailure
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -37,21 +38,36 @@ class NotesSyncEngine(
         val username = sessionStorage.get()?.username
             ?: return@withLock Result.Success(Unit) // logged out: nothing to sync
 
-        uploadPendingChanges(username)?.let { failure -> return@withLock failure }
+        try {
+            val skipped = mutableListOf<DataError.Network>()
+            uploadPendingChanges(username, skipped)?.let { failure -> return@withLock failure }
 
-        // Fresh snapshot after the upload phase, so it includes what we just pushed.
-        val remoteNotes = when (val result = remote.getNotes()) {
-            is Result.Success -> result.data.notes.map { it.toNote() }
-            is Result.Error -> return@withLock result.asEmptyResult()
+            // Fresh snapshot after the upload phase, so it includes what we just pushed.
+            val remoteNotes = when (val result = remote.getNotes()) {
+                is Result.Success -> result.data.notes.map { it.toNote() }
+                is Result.Error -> return@withLock result.asEmptyResult()
+            }
+            mergeRemoteIntoLocal(username, remoteNotes)
+
+            metadata.setLastSyncedAt(username, Clock.System.now())
+            // Everything else synced; still report a record the server rejected.
+            skipped.firstOrNull()?.let { Result.Error(it) } ?: Result.Success(Unit)
+        } catch (e: IllegalArgumentException) {
+            // A malformed timestamp from the server (Instant.parse) — report it
+            // instead of throwing out of sync (which would crash the iOS app).
+            Result.Error(DataError.Network.SERIALIZATION)
         }
-        mergeRemoteIntoLocal(username, remoteNotes)
-
-        metadata.setLastSyncedAt(username, Clock.System.now())
-        Result.Success(Unit)
     }
 
-    /** Returns null when every pending record uploaded (or resolved), a failure otherwise. */
-    private suspend fun uploadPendingChanges(username: String): EmptyResult<DataError.Network>? {
+    /**
+     * Returns null when every pending record uploaded, resolved or was skipped,
+     * a failure otherwise. Records the server rejects for good (see
+     * [isPermanentSyncFailure]) are skipped and their errors added to [skipped].
+     */
+    private suspend fun uploadPendingChanges(
+        username: String,
+        skipped: MutableList<DataError.Network>,
+    ): EmptyResult<DataError.Network>? {
         val pending = queue.pendingForUser(username)
         if (pending.isEmpty()) return null
 
@@ -92,7 +108,11 @@ class NotesSyncEngine(
             }
             when (outcome) {
                 is Result.Success -> queue.removeIfUnchanged(record)
-                is Result.Error -> return outcome
+                is Result.Error -> if (outcome.error.isPermanentSyncFailure()) {
+                    skipped += outcome.error
+                } else {
+                    return outcome
+                }
             }
         }
         return null

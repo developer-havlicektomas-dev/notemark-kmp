@@ -38,6 +38,7 @@ class IosNotesService : KoinComponent {
     private val notesRepository: NotesRepository by inject()
 
     /** Runs a full sync, then returns the current local notes and any error. */
+    @Throws(Exception::class)
     suspend fun getNotes(): IosNotesResult {
         val error = notesRepository.fetchNotes().errorOrNull()
         val notes = notesRepository.notes.first().map { it.toIos() }
@@ -45,6 +46,7 @@ class IosNotesService : KoinComponent {
     }
 
     /** Current local snapshot without touching the network (list refreshes). */
+    @Throws(Exception::class)
     suspend fun getLocalNotes(): List<IosNote> =
         notesRepository.notes.first().map { it.toIos() }
 
@@ -53,6 +55,7 @@ class IosNotesService : KoinComponent {
      * same draft keep hitting one row (M4). `lastEditedAt` is stamped here;
      * `createdAt` round-trips from the draft.
      */
+    @Throws(Exception::class)
     suspend fun saveNote(
         id: String,
         title: String,
@@ -69,13 +72,20 @@ class IosNotesService : KoinComponent {
         return notesRepository.upsertNote(note).errorOrNull()
     }
 
+    /** The note as currently stored locally, or null if it no longer exists. */
+    @Throws(Exception::class)
+    suspend fun getNote(id: String): IosNote? = notesRepository.getNote(id)?.toIos()
+
+    @Throws(Exception::class)
     suspend fun deleteNote(id: String): DataError.Network? =
         notesRepository.deleteNote(id).errorOrNull()
 
     /** Clears local notes; rows with pending sync changes survive (M4 semantics). */
+    @Throws(Exception::class)
     suspend fun clearLocalData() = notesRepository.clearSyncedLocalData()
 
     /** Full local wipe (notes + sync queue) for M3 logout. */
+    @Throws(Exception::class)
     suspend fun clearAllLocalData() = notesRepository.clearAllLocalData()
 
     private fun <T> Result<T, DataError.Network>.errorOrNull(): DataError.Network? =

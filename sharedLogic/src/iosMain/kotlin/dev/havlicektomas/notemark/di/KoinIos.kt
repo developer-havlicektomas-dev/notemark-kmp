@@ -2,7 +2,13 @@ package dev.havlicektomas.notemark.di
 
 import dev.havlicektomas.notemark.auth.domain.AuthRepository
 import dev.havlicektomas.notemark.auth.domain.PasswordValidationState
+import dev.havlicektomas.notemark.auth.domain.SessionEvents
 import dev.havlicektomas.notemark.auth.domain.SessionStorage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import dev.havlicektomas.notemark.auth.domain.UserDataValidator
 import dev.havlicektomas.notemark.core.domain.util.DataError
 import dev.havlicektomas.notemark.core.domain.util.Result
@@ -36,13 +42,25 @@ class IosAuthService : KoinComponent {
     private val authRepository: AuthRepository by inject()
     private val validator: UserDataValidator by inject()
     private val sessionStorage: SessionStorage by inject()
+    private val sessionEvents: SessionEvents by inject()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    suspend fun login(email: String, password: String): DataError.Network? =
+    /**
+     * Fires [onExpired] (on the main thread) when the backend rejects the refresh
+     * token and the session has been cleared; the app should return to auth.
+     */
+    fun watchSessionExpired(onExpired: () -> Unit): IosWatchHandle =
+        IosWatchHandle(sessionEvents.expired.onEach { onExpired() }.launchIn(scope))
+
+    /** `null` on success; otherwise a [DataError.Network] or [DataError.Local.SECURE_STORAGE]. */
+    @Throws(Exception::class)
+    suspend fun login(email: String, password: String): DataError? =
         when (val result = authRepository.login(email, password)) {
             is Result.Success -> null
             is Result.Error -> result.error
         }
 
+    @Throws(Exception::class)
     suspend fun register(
         username: String,
         email: String,
@@ -53,11 +71,14 @@ class IosAuthService : KoinComponent {
             is Result.Error -> result.error
         }
 
+    @Throws(Exception::class)
     suspend fun hasSession(): Boolean = sessionStorage.get() != null
 
     /** The signed-in user's username, used by the notes screen for the avatar initials. */
+    @Throws(Exception::class)
     suspend fun username(): String? = sessionStorage.get()?.username
 
+    @Throws(Exception::class)
     suspend fun clearSession() = sessionStorage.clear()
 
     fun isValidEmail(email: String): Boolean = validator.isValidEmail(email)

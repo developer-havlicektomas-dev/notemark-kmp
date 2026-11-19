@@ -5,6 +5,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import dev.havlicektomas.notemark.auth.domain.SessionEvents
+import dev.havlicektomas.notemark.core.presentation.util.ObserveAsEvents
+import org.koin.compose.koinInject
 import dev.havlicektomas.notemark.auth.presentation.landing.LandingRoot
 import dev.havlicektomas.notemark.auth.presentation.login.LoginRoot
 import dev.havlicektomas.notemark.auth.presentation.register.RegisterRoot
@@ -18,6 +21,15 @@ import dev.havlicektomas.notemark.settings.presentation.SettingsRoot
 fun NavigationRoot(
     navController: NavHostController = rememberNavController(),
 ) {
+    // The refresh token was rejected and the session cleared: every request
+    // would now fail, so return to the auth flow from wherever the user is.
+    val sessionEvents = koinInject<SessionEvents>()
+    ObserveAsEvents(sessionEvents.expired) {
+        navController.navigate(LandingRoute) {
+            popUpTo(navController.graph.id) { inclusive = true }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = SplashRoute,

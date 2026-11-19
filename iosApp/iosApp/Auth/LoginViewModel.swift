@@ -22,7 +22,7 @@ final class LoginViewModel: ObservableObject {
             defer { isLoggingIn = false }
             do {
                 if let error = try await auth.login(email: email, password: password) {
-                    errorMessage = authMessage(for: error, flow: .login)
+                    errorMessage = loginMessage(for: error)
                 } else {
                     onSuccess()
                 }
