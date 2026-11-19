@@ -7,5 +7,6 @@
     <string name="error_serialization">Couldn’t read the server response.</string>
     <string name="error_unknown">Something went wrong. Try again.</string>
     <string name="error_invalid_credentials">Couldn’t log in. Check your email and password and try again.</string>
+    <string name="error_secure_storage">Logged in, but couldn’t save your session securely on this device. Try again.</string>
     <string name="error_account_exists">An account with this email or username already exists.</string>
 </resources>

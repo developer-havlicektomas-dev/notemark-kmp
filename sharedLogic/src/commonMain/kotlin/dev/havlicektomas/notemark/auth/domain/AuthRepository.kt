@@ -17,10 +17,11 @@ interface AuthRepository {
 
     /**
      * Logs in and, on success, persists the session via [SessionStorage].
-     * Invalid credentials surface as [DataError.Network.UNAUTHORIZED].
+     * Invalid credentials surface as [DataError.Network.UNAUTHORIZED]; a session
+     * that can't be saved (e.g. Keychain unavailable) as [DataError.Local.SECURE_STORAGE].
      */
     suspend fun login(
         email: String,
         password: String,
-    ): EmptyResult<DataError.Network>
+    ): EmptyResult<DataError>
 }

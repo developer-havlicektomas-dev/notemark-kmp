@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import notemark.sharedui.generated.resources.Res
 import notemark.sharedui.generated.resources.error_invalid_credentials
+import notemark.sharedui.generated.resources.error_secure_storage
+import notemark.sharedui.generated.resources.error_unknown
 
 data class LoginState(
     val email: String = "",
@@ -91,7 +93,9 @@ class LoginViewModel(
     )
 }
 
-private fun DataError.Network.toLoginUiText(): UiText = when (this) {
+private fun DataError.toLoginUiText(): UiText = when (this) {
     DataError.Network.UNAUTHORIZED -> UiText.Resource(Res.string.error_invalid_credentials)
-    else -> toUiText()
+    is DataError.Network -> toUiText()
+    DataError.Local.SECURE_STORAGE -> UiText.Resource(Res.string.error_secure_storage)
+    is DataError.Local -> UiText.Resource(Res.string.error_unknown)
 }

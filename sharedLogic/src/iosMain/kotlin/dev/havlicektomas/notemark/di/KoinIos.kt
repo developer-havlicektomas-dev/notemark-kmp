@@ -52,8 +52,9 @@ class IosAuthService : KoinComponent {
     fun watchSessionExpired(onExpired: () -> Unit): IosWatchHandle =
         IosWatchHandle(sessionEvents.expired.onEach { onExpired() }.launchIn(scope))
 
+    /** `null` on success; otherwise a [DataError.Network] or [DataError.Local.SECURE_STORAGE]. */
     @Throws(Exception::class)
-    suspend fun login(email: String, password: String): DataError.Network? =
+    suspend fun login(email: String, password: String): DataError? =
         when (val result = authRepository.login(email, password)) {
             is Result.Success -> null
             is Result.Error -> result.error
