@@ -41,8 +41,8 @@ repository-based data layer, and a generic typed `Result` wrapper for error hand
 ## Requirements
 
 - **JDK 17+** (this project builds with a modern JDK; Gradle uses a JVM 11 target).
-- **Android SDK** — compile/target SDK 36, min SDK 29.
-- **Xcode** (for iOS) with an iOS 15+ simulator or device.
+- **Android SDK** — compile SDK 37, target SDK 36, min SDK 29.
+- **Xcode** (for iOS) with an iOS 18.2+ simulator or device (the project's deployment target).
 - The **NoteMark backend** running locally (see below) for anything auth- or sync-related.
 
 ## Running the backend locally
@@ -52,7 +52,7 @@ The mobile app talks to a companion Spring Boot backend, **notemark-api**, on
 is lost on restart, and no database setup is required.
 
 ```bash
-cd /Users/dev/IdeaProjects/notemark-api
+cd ../notemark-api   # sibling of this repo
 ./gradlew bootRun
 ```
 
@@ -108,16 +108,16 @@ The iOS app is a standard Xcode project that links the `SharedLogic` Kotlin fram
    open iosApp/iosApp.xcodeproj
    ```
 
-3. Select the **iosApp** scheme and an iOS simulator, then Run (⌘R). Gradle builds the
+3. Select the **NoteMarkTests** scheme (the only shared one; it builds the app) and an iOS simulator, then Run (⌘R). Gradle builds the
    `SharedLogic` framework automatically as part of the build.
 
 To build from the command line for a simulator:
 
 ```bash
 cd iosApp
-xcodebuild -scheme iosApp -sdk iphonesimulator \
+xcodebuild -scheme NoteMarkTests -sdk iphonesimulator \
   -destination "id=<simulator-udid>" \
-  -configuration Debug CODE_SIGNING_ALLOWED=NO -derivedDataPath build build
+  -configuration Debug CODE_SIGNING_ALLOWED=NO -derivedDataPath build build-for-testing
 ```
 
 ## Libraries used
@@ -149,8 +149,9 @@ Versions are managed centrally in [`gradle/libs.versions.toml`](gradle/libs.vers
 - **Navigation Compose** — type-safe, `@Serializable` route navigation (Android).
 
 **Testing**
-- **kotlin-test** / **JUnit** — shared and Android unit tests.
-- **XCUITest** — interactive iOS UI tests (scheme `NoteMarkTests`).
+- **kotlin-test** / **kotlinx-coroutines-test** — configured for shared unit tests (no Kotlin
+  tests exist yet).
+- **XCUITest** — interactive iOS UI tests in `iosApp/iosAppUITests/` (scheme `NoteMarkTests`).
 
 ## Project layout
 
