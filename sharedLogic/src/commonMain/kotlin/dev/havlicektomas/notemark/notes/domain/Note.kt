@@ -1,6 +1,6 @@
 package dev.havlicektomas.notemark.notes.domain
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * A note as the app reasons about it. Timestamps are real [Instant]s; the data

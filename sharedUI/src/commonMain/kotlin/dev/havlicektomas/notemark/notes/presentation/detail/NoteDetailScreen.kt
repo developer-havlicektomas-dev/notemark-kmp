@@ -56,8 +56,8 @@ import dev.havlicektomas.notemark.core.presentation.util.ObserveAsEvents
 import dev.havlicektomas.notemark.core.presentation.util.UiText
 import dev.havlicektomas.notemark.core.presentation.util.toRelativeTime
 import dev.havlicektomas.notemark.core.presentation.util.toShortDate
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable

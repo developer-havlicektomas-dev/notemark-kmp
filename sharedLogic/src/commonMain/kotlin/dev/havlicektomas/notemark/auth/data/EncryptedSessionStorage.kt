@@ -10,12 +10,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Persists the session into a platform [Settings] instance that is encrypted
- * on Android (EncryptedSharedPreferences). All access is moved off the main
- * thread since the underlying store touches disk.
+ * Persists the session into a secure platform [Settings] instance
+ * (EncryptedSharedPreferences on Android, Keychain on iOS). All access is moved
+ * off the main thread since the underlying store touches disk.
+ *
+ * [onIdentityChanged] runs when the session is cleared or a different user is
+ * stored (not on a token refresh for the same user), so in-memory token caches
+ * such as Ktor's bearer provider can be dropped.
  */
 class EncryptedSessionStorage(
     private val settings: Settings,
+    private val onIdentityChanged: () -> Unit = {},
 ) : SessionStorage {
 
     override suspend fun get(): AuthInfo? = withContext(Dispatchers.Default) {
@@ -35,15 +40,19 @@ class EncryptedSessionStorage(
     override suspend fun set(info: AuthInfo?): Unit = withContext(Dispatchers.Default) {
         if (info == null) {
             clearKeys()
+            onIdentityChanged()
         } else {
+            val previousUser = settings.getStringOrNull(KEY_USERNAME)
             settings[KEY_ACCESS] = info.tokens.accessToken
             settings[KEY_REFRESH] = info.tokens.refreshToken
             settings[KEY_USERNAME] = info.username
+            if (previousUser != info.username) onIdentityChanged()
         }
     }
 
     override suspend fun clear(): Unit = withContext(Dispatchers.Default) {
         clearKeys()
+        onIdentityChanged()
     }
 
     private fun clearKeys() {

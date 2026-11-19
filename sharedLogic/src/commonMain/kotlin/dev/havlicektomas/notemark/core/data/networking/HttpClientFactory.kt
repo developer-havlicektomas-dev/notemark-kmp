@@ -37,7 +37,9 @@ object HttpClientFactory {
             )
         }
         install(Logging) {
-            level = LogLevel.ALL
+            // INFO logs method, URL and status only. ALL/BODY/HEADERS would write
+            // passwords, bearer/refresh tokens and note contents to the system log.
+            level = LogLevel.INFO
         }
         install(Auth) {
             bearer {

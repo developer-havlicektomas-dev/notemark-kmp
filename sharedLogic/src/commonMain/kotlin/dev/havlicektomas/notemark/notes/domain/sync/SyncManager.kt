@@ -3,7 +3,7 @@ package dev.havlicektomas.notemark.notes.domain.sync
 import dev.havlicektomas.notemark.core.domain.util.DataError
 import dev.havlicektomas.notemark.core.domain.util.EmptyResult
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Sync state and controls for the logged-in user (flows resolve the user at collect time). */
 interface SyncManager {

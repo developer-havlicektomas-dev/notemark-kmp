@@ -14,8 +14,8 @@ import dev.havlicektomas.notemark.notes.domain.sync.SyncOperation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Two-way sync per the M4 spec: upload pending local changes, download remote
@@ -91,7 +91,7 @@ class NotesSyncEngine(
                 }
             }
             when (outcome) {
-                is Result.Success -> queue.remove(record.queueId)
+                is Result.Success -> queue.removeIfUnchanged(record)
                 is Result.Error -> return outcome
             }
         }
@@ -99,7 +99,13 @@ class NotesSyncEngine(
     }
 
     private suspend fun mergeRemoteIntoLocal(username: String, remoteNotes: List<Note>) {
+        // Notes deleted locally while this sync ran: their DELETE is still queued,
+        // so don't bring the server copy back.
+        val pendingDeletes = queue.pendingForUser(username)
+            .filter { it.operation == SyncOperation.DELETE }
+            .mapTo(mutableSetOf()) { it.noteId }
         for (remoteNote in remoteNotes) {
+            if (remoteNote.id in pendingDeletes) continue
             val localNote = local.getNote(remoteNote.id)
             if (localNote == null || remoteNote.lastEditedAt > localNote.lastEditedAt) {
                 local.upsertNote(username, remoteNote)
