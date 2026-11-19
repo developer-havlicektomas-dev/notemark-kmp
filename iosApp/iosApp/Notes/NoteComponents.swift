@@ -4,6 +4,8 @@ import SharedLogic
 /// A single note in the grid: monospaced date, title, and a clamped preview.
 struct NoteCard: View {
     let note: IosNote
+    /// Outlined when the note is open in the detail column beside the list.
+    var isSelected: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
@@ -31,6 +33,13 @@ struct NoteCard: View {
         .padding(Space.lg)
         .background(AppColor.bgSubtle)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay {
+            if isSelected {
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(AppColor.accent, lineWidth: 2)
+            }
+        }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

@@ -14,8 +14,6 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
-
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.md) {
                     if !viewModel.isOnline {
@@ -45,13 +43,23 @@ struct SettingsView: View {
                     .accessibilityIdentifier("logoutButton")
                 }
                 .padding(.horizontal, Space.lg)
-                .padding(.top, Space.xl)
+                .padding(.top, Space.md)
                 .padding(.bottom, Space.huge)
+                .frame(maxWidth: FormWidth.max)
+                .frame(maxWidth: .infinity)
             }
         }
         .background(AppColor.bg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        // Back runs onBack so the list re-reads the local DB afterwards.
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Back", systemImage: "chevron.left", action: onBack)
+                    .accessibilityIdentifier("settingsBackButton")
+            }
+        }
         .task { await viewModel.load() }
         .confirmationDialog("Log out?", isPresented: $showLogoutConfirm, titleVisibility: .visible) {
             Button("Sync and log out") { viewModel.syncAndLogout(onLoggedOut: onLoggedOut) }
@@ -173,27 +181,6 @@ struct SettingsView: View {
     }
 
     // MARK: - Chrome
-
-    private var topBar: some View {
-        HStack(spacing: Space.xs) {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(AppColor.fg)
-                    .frame(width: 40, height: 40)
-            }
-            .buttonStyle(PressScaleStyle(scale: 0.92))
-            .accessibilityIdentifier("settingsBackButton")
-
-            Text("Settings")
-                .font(.nmHeadline)
-                .foregroundStyle(AppColor.fg)
-
-            Spacer()
-        }
-        .padding(.horizontal, Space.sm)
-        .frame(height: 56)
-    }
 
     private var profileCard: some View {
         HStack(spacing: Space.md) {

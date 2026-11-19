@@ -5,17 +5,9 @@ struct LoginView: View {
     let onRegister: () -> Void
 
     @StateObject private var viewModel = LoginViewModel()
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                BackButton { dismiss() }
-                Spacer()
-            }
-            .frame(height: 44)
-            .padding(.horizontal, Space.sm)
-
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: Space.xs) {
@@ -77,13 +69,12 @@ struct LoginView: View {
                 .padding(.horizontal, 22)
                 .padding(.top, Space.sm)
                 .padding(.bottom, Space.xxl)
-                .frame(maxWidth: 380)
+                .frame(maxWidth: FormWidth.max)
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
         }
         .background(AppColor.bg.ignoresSafeArea())
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

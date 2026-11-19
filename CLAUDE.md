@@ -30,7 +30,18 @@ open iosApp/iosApp.xcodeproj              # only shared scheme: NoteMarkTests (b
 ```
 
 - Xcode's "Compile Kotlin Framework" build phase runs `./gradlew :sharedLogic:embedAndSignAppleFrameworkForXcode`.
-- iOS deployment target is **18.2**.
+- iOS deployment target is **27.0** (Liquid Glass and `safeAreaBar` used without availability checks).
+- iOS UI: use system toolbars (`.toolbar`/`ToolbarItem`), not hand-drawn bars: they get Liquid Glass, and on
+  iPhone Duo the system moves them into a vertical bar on the leading/trailing edge (a persistent horizontal
+  safe-area inset). Never pad by hand to clear bars; use `safeAreaBar` / `safeAreaInset`, and keep
+  `ignoresSafeArea()` to background fills. Buttons use `.glass` / `.glassProminent` (`AppButtons.swift`).
+- iOS notes are a `NavigationSplitView` (`NotesFlowView`): compact (iPhone, folded Duo) collapses to one stack
+  driven by `preferredCompactColumn`; regular (unfolded Duo, iPad) shows list + detail. Detail = note or
+  Settings; Reader is pushed in the detail column. Check layout changes on the iPhone Duo simulator closed,
+  half-open and open.
+- UI tests need a fresh user per run: `TEST_RUNNER_NM_EMAIL` / `_PASSWORD` / `_USERNAME`. The "Save Password?"
+  prompt can appear late and eat a tap (flaky). `testMilestone4Journey` fails on iOS 27 at "interval picker
+  should open": `confirmationDialog` is a popover there, not `app.sheets[...]` (predates the iOS 27 work).
 - Never build for the simulator with `CODE_SIGNING_ALLOWED=NO`: the session lives in the Keychain,
   an unsigned app can't access it, and login then fails with a misleading "Couldn't reach the server".
 - Base URL is `expect/actual platformBaseUrl` in `core/data/networking/ApiConfig*.kt`:

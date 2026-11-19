@@ -12,38 +12,41 @@ struct ReaderView: View {
     private let autoHideSeconds: UInt64 = 3
 
     var body: some View {
-        ZStack(alignment: .top) {
-            AppColor.bg.ignoresSafeArea()
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.xl) {
+                Text(title)
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundStyle(AppColor.fg)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: Space.xl) {
-                    Text(title)
-                        .font(.system(size: 30, weight: .bold))
+                if !content.isEmpty {
+                    Text(content)
+                        .font(.system(size: 18))
                         .foregroundStyle(AppColor.fg)
-
-                    if !content.isEmpty {
-                        Text(content)
-                            .font(.system(size: 18))
-                            .foregroundStyle(AppColor.fg)
-                            .lineSpacing(8)
-                    }
+                        .lineSpacing(8)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Space.xl)
-                .padding(.top, 72)
-                .padding(.bottom, Space.huge)
             }
-
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Space.xl)
+            .padding(.top, Space.lg)
+            .padding(.bottom, Space.huge)
+            .frame(maxWidth: ReadingWidth.max)
+            .frame(maxWidth: .infinity)
+        }
+        .background(AppColor.bg.ignoresSafeArea())
+        // The controls reserve their own space at the top instead of covering
+        // the text, and stay inside the safe area on every edge.
+        .safeAreaBar(edge: .top) {
             if controlsVisible {
                 controlsBar
                     .padding(.horizontal, Space.md)
                     .transition(.opacity)
-            } else {
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if !controlsVisible {
                 Text("Tap anywhere to show controls")
                     .font(.nmFootnote)
                     .foregroundStyle(AppColor.fgMuted)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .frame(maxHeight: .infinity, alignment: .bottom)
                     .padding(.bottom, Space.xl)
                     .transition(.opacity)
             }
@@ -92,7 +95,7 @@ struct ReaderView: View {
         }
         .padding(.horizontal, Space.sm)
         .frame(height: 48)
-        .background(AppColor.bgSubtle, in: Capsule())
+        .glassEffect(.regular.interactive(), in: Capsule())
         .padding(.top, Space.sm)
     }
 }

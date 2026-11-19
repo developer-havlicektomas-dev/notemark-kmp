@@ -12,84 +12,142 @@ struct NoteDraft: Hashable {
     var lastEditedAtEpochMs: Int64 = 0
 }
 
-/// Screens reachable from the notes list within the same navigation stack.
-enum NotesRoute: Hashable {
-    case detail(NoteDraft)
-    case reader(title: String, content: String)
+/// What the detail column shows. `instance` gives every opening of a note a
+/// fresh `NoteDetailView` (and view model), even when it is the same note.
+enum NotesDetail: Hashable {
+    case note(NoteDraft, instance: UUID)
     case settings
 }
 
-/// The notes feature: a list that pushes the editor, reader, and settings onto a
-/// `NavigationStack`. Owns the list view model so the editor can trigger a refresh.
+/// Screens pushed on top of the detail column.
+enum NotesRoute: Hashable {
+    case reader(title: String, content: String)
+}
+
+/// The notes feature as an adaptive list-detail layout.
+///
+/// Compact widths (iPhone, a folded iPhone Duo) collapse the split view into a
+/// single stack: the list, with the note or Settings pushed on top. Regular
+/// widths (an unfolded iPhone Duo, iPad) show the list and the open note side
+/// by side. Owns the list view model so the detail can trigger a refresh.
 struct NotesFlowView: View {
     let onLoggedOut: () -> Void
 
     @StateObject private var listVM = NotesListViewModel()
-    @State private var path: [NotesRoute] = []
+    @State private var detail: NotesDetail?
+    @State private var detailPath: [NotesRoute] = []
+    @State private var preferredColumn: NavigationSplitViewColumn = .sidebar
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var isCollapsed: Bool { horizontalSizeClass == .compact }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationSplitView(preferredCompactColumn: $preferredColumn) {
             NotesListView(
                 viewModel: listVM,
+                selectedNoteID: isCollapsed ? nil : selectedNoteID,
                 onOpen: { note in
-                    path.append(.detail(NoteDraft(
+                    show(.note(NoteDraft(
                         id: note.id,
                         title: note.title,
                         content: note.content,
                         isNew: false,
                         createdAtEpochMs: note.createdAtEpochMs,
                         lastEditedAtEpochMs: note.lastEditedAtEpochMs
-                    )))
+                    ), instance: UUID()))
                 },
                 onCreate: {
                     // The id and creation time are fixed up front so debounced
                     // autosaves keep upserting the same row (M4).
                     let now = Int64(Date().timeIntervalSince1970 * 1000)
-                    path.append(.detail(NoteDraft(
+                    show(.note(NoteDraft(
                         id: UUID().uuidString.lowercased(),
                         title: "",
                         content: "",
                         isNew: true,
                         createdAtEpochMs: now,
                         lastEditedAtEpochMs: now
-                    )))
+                    ), instance: UUID()))
                 },
-                onOpenSettings: {
-                    path.append(.settings)
-                }
+                onOpenSettings: { show(.settings) }
             )
-            .navigationDestination(for: NotesRoute.self) { route in
-                switch route {
-                case .detail(let draft):
-                    NoteDetailView(
-                        draft: draft,
-                        onOpenReader: { title, content in
-                            path.append(.reader(title: title, content: content))
-                        },
-                        onDone: {
-                            if !path.isEmpty { path.removeLast() }
-                            // Edits are already in the local DB (autosave) —
-                            // no network round-trip needed to show them.
-                            Task { await listVM.refreshLocal() }
+            .navigationSplitViewColumnWidth(min: 300, ideal: 380, max: 460)
+        } detail: {
+            NavigationStack(path: $detailPath) {
+                detailRoot
+                    .navigationDestination(for: NotesRoute.self) { route in
+                        switch route {
+                        case .reader(let title, let content):
+                            ReaderView(title: title, content: content) {
+                                if !detailPath.isEmpty { detailPath.removeLast() }
+                            }
                         }
-                    )
-                case .reader(let title, let content):
-                    ReaderView(title: title, content: content) {
-                        if !path.isEmpty { path.removeLast() }
                     }
-                case .settings:
-                    SettingsView(
-                        onBack: {
-                            if !path.isEmpty { path.removeLast() }
-                            // Settings can clear local data or sync — re-read
-                            // the local DB, but don't trigger another sync.
-                            Task { await listVM.refreshLocal() }
-                        },
-                        onLoggedOut: onLoggedOut
-                    )
-                }
+            }
+        }
+        .navigationSplitViewStyle(.balanced)
+        .onChange(of: preferredColumn) { _, column in
+            // Collapsed back to the list by the system (e.g. a swipe back):
+            // drop the detail so it doesn't linger when the window widens.
+            if column == .sidebar && isCollapsed && detail != nil {
+                detail = nil
+                detailPath = []
             }
         }
         .task { await listVM.load() }
+    }
+
+    private var selectedNoteID: String? {
+        if case .note(let draft, _) = detail { return draft.id }
+        return nil
+    }
+
+    @ViewBuilder
+    private var detailRoot: some View {
+        switch detail {
+        case .note(let draft, let instance):
+            NoteDetailView(
+                draft: draft,
+                showsBackButton: isCollapsed,
+                onOpenReader: { title, content in
+                    detailPath.append(.reader(title: title, content: content))
+                },
+                onSaved: {
+                    // The list stays visible beside the editor on wide windows.
+                    Task { await listVM.refreshLocal() }
+                },
+                onDone: closeDetail
+            )
+            .id(instance)
+        case .settings:
+            SettingsView(
+                // Settings can clear local data or sync — closeDetail re-reads
+                // the local DB, but doesn't trigger another sync.
+                onBack: closeDetail,
+                onLoggedOut: onLoggedOut
+            )
+        case nil:
+            ContentUnavailableView(
+                "Select a note",
+                systemImage: "doc.text",
+                description: Text("Pick a note from the list to read or edit it here.")
+            )
+            .background(AppColor.bg.ignoresSafeArea())
+        }
+    }
+
+    private func show(_ newDetail: NotesDetail) {
+        detailPath = []
+        detail = newDetail
+        preferredColumn = .detail
+    }
+
+    private func closeDetail() {
+        detailPath = []
+        detail = nil
+        preferredColumn = .sidebar
+        // Edits are already in the local DB (autosave) — no network
+        // round-trip needed to show them.
+        Task { await listVM.refreshLocal() }
     }
 }

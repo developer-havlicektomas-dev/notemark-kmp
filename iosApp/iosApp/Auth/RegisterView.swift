@@ -4,7 +4,6 @@ struct RegisterView: View {
     let onRegistered: (_ email: String) -> Void
 
     @StateObject private var viewModel = RegisterViewModel()
-    @Environment(\.dismiss) private var dismiss
 
     private var repeatHelper: String? {
         guard !viewModel.repeatPassword.isEmpty, !viewModel.passwordsMatch else { return nil }
@@ -13,13 +12,6 @@ struct RegisterView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                BackButton { dismiss() }
-                Spacer()
-            }
-            .frame(height: 44)
-            .padding(.horizontal, Space.sm)
-
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     VStack(alignment: .leading, spacing: Space.xs) {
@@ -86,13 +78,12 @@ struct RegisterView: View {
                 .padding(.horizontal, 22)
                 .padding(.top, Space.xs)
                 .padding(.bottom, Space.huge)
-                .frame(maxWidth: 380)
+                .frame(maxWidth: FormWidth.max)
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
         }
         .background(AppColor.bg.ignoresSafeArea())
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
