@@ -25,13 +25,22 @@ actual val platformModule: Module = module {
         NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults)
     }
     single<Settings>(SecureSettings) {
+        val defaults = NSUserDefaults.standardUserDefaults
         // Earlier builds kept the tokens in plain NSUserDefaults; wipe them
         // (users of those builds will need to log in once more).
-        NSUserDefaults.standardUserDefaults.apply {
-            removeObjectForKey("access_token")
-            removeObjectForKey("refresh_token")
-        }
+        defaults.removeObjectForKey("access_token")
+        defaults.removeObjectForKey("refresh_token")
+
         @OptIn(ExperimentalSettingsImplementation::class)
-        KeychainSettings(service = "dev.havlicektomas.notemark.session")
+        val keychain = KeychainSettings(service = "dev.havlicektomas.notemark.session")
+        // Keychain items survive app deletion, NSUserDefaults don't: on the first
+        // launch after a (re)install, drop any session left by a previous install.
+        if (!defaults.boolForKey(KEY_INSTALL_MARKER)) {
+            keychain.clear()
+            defaults.setBool(true, forKey = KEY_INSTALL_MARKER)
+        }
+        keychain
     }
 }
+
+private const val KEY_INSTALL_MARKER = "notemark_install_marker"
