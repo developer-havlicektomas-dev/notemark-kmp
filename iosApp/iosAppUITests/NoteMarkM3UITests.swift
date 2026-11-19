@@ -68,7 +68,7 @@ final class NoteMarkM3UITests: XCTestCase {
         app.buttons["editCloseButton"].tap()
         let discardSheet = app.sheets["Discard changes?"]
         XCTAssertTrue(discardSheet.waitForExistence(timeout: 5), "closing a dirty editor should ask to discard")
-        discardSheet.buttons["Keep editing"].tap()
+        cancelDialog(app, discardSheet, "Keep editing")
 
         app.buttons["Save"].tap()
 
@@ -102,6 +102,17 @@ final class NoteMarkM3UITests: XCTestCase {
 
     // MARK: - Helpers
 
+    /// Taps a dialog's cancel-role button. On recent iOS an iPhone dialog shown as a
+    /// popover hides that button (tapping outside cancels), so fall back to that.
+    private func cancelDialog(_ app: XCUIApplication, _ sheet: XCUIElement, _ label: String) {
+        let button = sheet.buttons[label]
+        if button.exists {
+            button.tap()
+        } else {
+            app.otherElements["PopoverDismissRegion"].firstMatch.tap()
+        }
+    }
+
     /// Attaches a named screenshot to the test report for visual review.
     private func snap(_ app: XCUIApplication, _ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
@@ -110,7 +121,19 @@ final class NoteMarkM3UITests: XCTestCase {
         add(attachment)
     }
 
+
+    /// A previous run that failed midway can leave a session behind; start logged out.
+    private func ensureLoggedOut(_ app: XCUIApplication) {
+        let avatar = app.buttons["avatarButton"]
+        guard avatar.waitForExistence(timeout: 3) else { return }
+        avatar.tap()
+        app.buttons["logoutButton"].tap()
+        app.sheets["Log out?"].buttons["Sync and log out"].tap()
+        _ = app.buttons["Log in"].waitForExistence(timeout: 15)
+    }
+
     private func logIn(_ app: XCUIApplication) {
+        ensureLoggedOut(app)
         let landingLogIn = app.buttons["Log in"]
         XCTAssertTrue(landingLogIn.waitForExistence(timeout: 10), "fresh install should show the landing screen")
         landingLogIn.tap()
@@ -126,6 +149,12 @@ final class NoteMarkM3UITests: XCTestCase {
         passwordField.typeText(password + "\n")
 
         XCTAssertTrue(app.staticTexts["NoteMark"].waitForExistence(timeout: 15), "login should land on the notes list")
+
+        // On real devices iOS may offer to save the password; its sheet blocks taps.
+        let savePassword = app.sheets["Save Password?"]
+        if savePassword.waitForExistence(timeout: 3) {
+            savePassword.buttons["Not Now"].tap()
+        }
     }
 
     private func createNote(_ app: XCUIApplication, title: String, content: String) {

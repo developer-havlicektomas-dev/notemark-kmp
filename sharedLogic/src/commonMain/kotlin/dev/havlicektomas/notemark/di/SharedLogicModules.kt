@@ -18,6 +18,9 @@ import dev.havlicektomas.notemark.notes.data.sync.SqlDelightSyncQueueDataSource
 import dev.havlicektomas.notemark.notes.data.sync.SyncMetadataStore
 import dev.havlicektomas.notemark.notes.domain.NotesRepository
 import dev.havlicektomas.notemark.notes.domain.sync.SyncManager
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.auth.authProvider
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -25,7 +28,17 @@ import org.koin.dsl.module
 val coreDataModule = module {
     single { httpClientEngine() }
     single { HttpClientFactory.create(engine = get(), sessionStorage = get()) }
-    singleOf(::EncryptedSessionStorage) bind SessionStorage::class
+    single<SessionStorage> {
+        EncryptedSessionStorage(
+            settings = get(SecureSettings),
+            // Resolved lazily at call time (the HttpClient itself depends on
+            // SessionStorage). Without this, Ktor keeps serving the previous
+            // user's cached bearer tokens after logout / login as someone else.
+            onIdentityChanged = {
+                get<HttpClient>().authProvider<BearerAuthProvider>()?.clearToken()
+            },
+        )
+    }
 }
 
 val authDataModule = module {

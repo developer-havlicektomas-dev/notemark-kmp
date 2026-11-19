@@ -1,7 +1,7 @@
 package dev.havlicektomas.notemark.core.presentation.util
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -13,7 +13,7 @@ private val monthAbbreviations = listOf(
 /** Short "12 Jun" form used on note cards and detail metadata. */
 fun Instant.toShortDate(): String {
     val dateTime = toLocalDateTime(TimeZone.currentSystemDefault())
-    return "${dateTime.dayOfMonth} ${monthAbbreviations[dateTime.monthNumber - 1]}"
+    return "${dateTime.day} ${monthAbbreviations[dateTime.month.ordinal]}"
 }
 
 /**
@@ -27,7 +27,7 @@ fun Instant.toSyncStatusTime(now: Instant = Clock.System.now()): String {
     val dateTime = toLocalDateTime(TimeZone.currentSystemDefault())
     val hour = dateTime.hour.toString().padStart(2, '0')
     val minute = dateTime.minute.toString().padStart(2, '0')
-    return "${dateTime.dayOfMonth} ${monthAbbreviations[dateTime.monthNumber - 1]} " +
+    return "${dateTime.day} ${monthAbbreviations[dateTime.month.ordinal]} " +
         "${dateTime.year}, $hour:$minute"
 }
 

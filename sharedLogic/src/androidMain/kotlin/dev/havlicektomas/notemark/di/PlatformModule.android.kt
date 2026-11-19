@@ -35,4 +35,5 @@ actual val platformModule: Module = module {
         )
         SharedPreferencesSettings(prefs)
     }
+    single<Settings>(SecureSettings) { get<Settings>() }
 }

@@ -1,7 +1,7 @@
 package dev.havlicektomas.notemark.notes.data
 
 import dev.havlicektomas.notemark.notes.domain.Note
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 fun NoteResponse.toNote(): Note = Note(
     id = id,

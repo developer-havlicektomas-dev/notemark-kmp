@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class PendingSyncRecord(
     val queueId: Long,
@@ -36,9 +36,13 @@ class SqlDelightSyncQueueDataSource(database: NoteMarkDatabase) {
      * Enqueues an operation, coalescing with what's already pending for the note
      * so the queue holds at most one record per note:
      * - CREATE then UPDATE stays CREATE (payload is read from the DB at sync time)
-     * - CREATE then DELETE cancels out (the server never saw the note)
      * - UPDATE then UPDATE stays a single UPDATE
-     * - UPDATE then DELETE becomes DELETE
+     * - CREATE/UPDATE then DELETE becomes DELETE. We can't assume the server never
+     *   saw a CREATE: its upload may be in flight, or have succeeded with the
+     *   response lost. A DELETE for a note the server doesn't have is a no-op.
+     *
+     * A coalesced record gets a newer `enqueuedAt`, which tells an in-flight
+     * upload (see [removeIfUnchanged]) that the note changed again after it read it.
      */
     suspend fun enqueue(
         username: String,
@@ -55,19 +59,38 @@ class SqlDelightSyncQueueDataSource(database: NoteMarkDatabase) {
 
             operation == SyncOperation.DELETE -> {
                 queries.deleteForNote(username, noteId)
-                if (pendingOp != SyncOperation.CREATE) {
-                    insert(username, noteId, SyncOperation.DELETE, enqueuedAt)
-                }
+                insert(username, noteId, SyncOperation.DELETE, enqueuedAt)
+            }
+
+            // Note written again after a pending DELETE: upload it instead.
+            pendingOp == SyncOperation.DELETE -> {
+                queries.deleteForNote(username, noteId)
+                insert(username, noteId, SyncOperation.UPDATE, enqueuedAt)
             }
 
             // CREATE or UPDATE over an existing CREATE/UPDATE: the pending record
-            // already covers it — content is read fresh from the DB when syncing.
-            else -> Unit
+            // already covers it (content is read fresh from the DB when syncing),
+            // but bump its timestamp so an in-flight upload won't remove it.
+            else -> {
+                val record = existing.last()
+                val bumped = maxOf(
+                    enqueuedAt.toEpochMilliseconds(),
+                    record.enqueuedAt.toEpochMilliseconds() + 1,
+                )
+                queries.touch(enqueuedAtEpochMs = bumped, queueId = record.queueId)
+            }
         }
     }
 
-    suspend fun remove(queueId: Long) = withContext(Dispatchers.IO) {
-        queries.deleteByQueueId(queueId)
+    /**
+     * Removes [record] after a successful upload, unless the note was enqueued
+     * again meanwhile — then the record stays so the newer edit gets uploaded.
+     */
+    suspend fun removeIfUnchanged(record: PendingSyncRecord) = withContext(Dispatchers.IO) {
+        queries.deleteByQueueIdIfUnchanged(
+            queueId = record.queueId,
+            enqueuedAtEpochMs = record.enqueuedAt.toEpochMilliseconds(),
+        )
     }
 
     suspend fun clearForUser(username: String) = withContext(Dispatchers.IO) {

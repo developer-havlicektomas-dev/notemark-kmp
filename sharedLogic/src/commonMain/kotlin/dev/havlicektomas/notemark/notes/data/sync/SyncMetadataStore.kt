@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Sync bookkeeping in multiplatform-settings: per-user last-sync timestamp and

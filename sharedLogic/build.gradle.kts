@@ -46,7 +46,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
-            // api so :sharedUI can reference kotlinx.datetime.Instant from the Note model.
+            // api so :sharedUI can format dates (TimeZone, toLocalDateTime); Instant/Clock come from kotlin.time.
             api(libs.kotlinx.datetime)
 
             implementation(libs.ktor.client.core)

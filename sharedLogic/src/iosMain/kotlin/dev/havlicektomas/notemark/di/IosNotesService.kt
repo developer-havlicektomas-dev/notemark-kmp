@@ -5,14 +5,14 @@ import dev.havlicektomas.notemark.core.domain.util.Result
 import dev.havlicektomas.notemark.notes.domain.Note
 import dev.havlicektomas.notemark.notes.domain.NotesRepository
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 /**
  * Swift-friendly view of a note: timestamps are epoch millis (a Swift `Date` is
- * one initializer away) instead of `kotlinx.datetime.Instant`.
+ * one initializer away) instead of `kotlin.time.Instant`.
  */
 data class IosNote(
     val id: String,

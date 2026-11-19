@@ -32,6 +32,17 @@ deleteByQueueId:
 DELETE FROM syncQueueEntity
 WHERE queueId = ?;
 
+-- Removes a record only if it wasn't touched (re-enqueued) while it was being
+-- uploaded, so edits made mid-sync keep their queue entry.
+deleteByQueueIdIfUnchanged:
+DELETE FROM syncQueueEntity
+WHERE queueId = ? AND enqueuedAtEpochMs = ?;
+
+touch:
+UPDATE syncQueueEntity
+SET enqueuedAtEpochMs = ?
+WHERE queueId = ?;
+
 deleteForNote:
 DELETE FROM syncQueueEntity
 WHERE username = ? AND noteId = ?;
