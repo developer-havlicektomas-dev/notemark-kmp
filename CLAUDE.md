@@ -20,7 +20,7 @@ Feature packages follow `<feature>/{domain,data,presentation}` under `dev.havlic
 
 ## Build & run
 
-Requires JDK 17+, Android SDK (compileSdk 37, targetSdk 36, min 29), Xcode. Start the backend first:
+Requires JDK 17+, Android SDK (compileSdk 37, targetSdk 37, min 29), Xcode. Start the backend first:
 `cd ../notemark-api && ./gradlew bootRun`.
 
 ```bash
@@ -94,6 +94,13 @@ Swift ViewModels are `@MainActor ObservableObject`s calling these facades with `
   `swift iosApp/scripts/render_app_icon.swift iosApp/iosApp/Assets.xcassets/AppIcon.appiconset`.
   Change the geometry in both places together.
 - Android build from the CLI needs `ANDROID_HOME=$HOME/Library/Android/sdk` (no `local.properties`).
+- targetSdk 37 blocks local-network addresses (incl. emulator `10.0.2.2`) without the runtime permission
+  `ACCESS_LOCAL_NETWORK`, declared only in `androidApp/src/debug/AndroidManifest.xml`; `MainActivity` asks for
+  it on launch when declared. Denied → every request fails as "No internet connection". To skip the dialog
+  (e.g. automated testing): `adb shell pm grant dev.havlicektomas.notemark android.permission.ACCESS_LOCAL_NETWORK`.
+- Notes list + detail are one destination (`NotesRoute` → `notes/presentation/NotesListDetailRoot.kt`,
+  material3-adaptive `ListDetailPaneScaffold`); there is no detail route. The detail ViewModel gets
+  `noteId`/`isNew` via `SavedStateHandle` default args built there. Reader and Settings stay full-screen routes.
 - Backend is in-memory — restarting it wipes users; the app may hold a session for a user that no
   longer exists.
 - Sending header `Debug: true` makes the backend issue 30 s access tokens (useful for testing refresh).

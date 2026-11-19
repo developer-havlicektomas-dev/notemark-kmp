@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        targetSdk 37 (Android 17) blocks connections to local-network addresses
+        unless this runtime permission is granted. Debug builds talk to the local
+        dev backend (emulator 10.0.2.2 / LAN), so they need it; release builds
+        talk to a public server and don't. MainActivity asks for it on launch;
+        to grant it without the dialog:
+        adb shell pm grant dev.havlicektomas.notemark android.permission.ACCESS_LOCAL_NETWORK
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+
+</manifest>

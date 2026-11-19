@@ -1,5 +1,6 @@
 package dev.havlicektomas.notemark.auth.presentation.register
 
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.centeredMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -91,7 +92,9 @@ fun RegisterScreen(
                 onNavigateBack = { onAction(RegisterAction.OnBackClick) },
             )
             Column(
-                modifier = Modifier.padding(horizontal = 22.dp),
+                modifier = Modifier
+                    .centeredMaxWidth()
+                    .padding(horizontal = 22.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Spacer(Modifier.height(4.dp))

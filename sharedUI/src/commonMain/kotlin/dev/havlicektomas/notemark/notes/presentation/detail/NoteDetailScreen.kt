@@ -1,5 +1,8 @@
 package dev.havlicektomas.notemark.notes.presentation.detail
 
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.centeredMaxWidth
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.ReadingMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -150,12 +153,15 @@ private fun EditModeContent(
     SaveStatusLine(
         isOnline = state.isOnline,
         lastSavedAt = state.lastSavedAt,
-        modifier = Modifier.padding(start = 22.dp, end = 22.dp, bottom = 8.dp),
+        modifier = Modifier
+            .centeredMaxWidth(ReadingMaxWidth)
+            .padding(start = 22.dp, end = 22.dp, bottom = 8.dp),
     )
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxHeight()
+            .centeredMaxWidth(ReadingMaxWidth)
             .padding(horizontal = 16.dp),
     ) {
         EditorField(
@@ -214,6 +220,7 @@ private fun ViewModeContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .centeredMaxWidth(ReadingMaxWidth)
             .padding(horizontal = 24.dp)
             .padding(top = 6.dp, bottom = 40.dp),
     ) {

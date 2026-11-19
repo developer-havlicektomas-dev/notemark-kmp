@@ -1,5 +1,7 @@
 package dev.havlicektomas.notemark.notes.presentation.reader
 
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.centeredMaxWidth
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.ReadingMaxWidth
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -100,6 +102,7 @@ fun ReaderScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
+                    .centeredMaxWidth(ReadingMaxWidth)
                     .padding(horizontal = 30.dp)
                     .padding(top = 78.dp, bottom = 40.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
