@@ -12,8 +12,7 @@ import dev.havlicektomas.notemark.auth.presentation.landing.LandingRoot
 import dev.havlicektomas.notemark.auth.presentation.login.LoginRoot
 import dev.havlicektomas.notemark.auth.presentation.register.RegisterRoot
 import dev.havlicektomas.notemark.auth.presentation.splash.SplashRoot
-import dev.havlicektomas.notemark.notes.presentation.detail.NoteDetailRoot
-import dev.havlicektomas.notemark.notes.presentation.list.NotesListRoot
+import dev.havlicektomas.notemark.notes.presentation.NotesListDetailRoot
 import dev.havlicektomas.notemark.notes.presentation.reader.ReaderRoot
 import dev.havlicektomas.notemark.settings.presentation.SettingsRoot
 
@@ -89,23 +88,12 @@ fun NavigationRoot(
         }
 
         composable<NotesRoute> {
-            NotesListRoot(
-                onOpenNote = { id ->
-                    navController.navigate(NoteDetailRoute(noteId = id, isNew = false))
-                },
-                onCreateNote = { id ->
-                    navController.navigate(NoteDetailRoute(noteId = id, isNew = true))
-                },
+            // Adaptive list-detail: one pane on compact windows, side by side when expanded.
+            NotesListDetailRoot(
+                onOpenReader = { id -> navController.navigate(ReaderRoute(noteId = id)) },
                 onOpenSettings = {
                     navController.navigate(SettingsRoute) { launchSingleTop = true }
                 },
-            )
-        }
-
-        composable<NoteDetailRoute> {
-            NoteDetailRoot(
-                onBack = { navController.navigateUp() },
-                onOpenReader = { id -> navController.navigate(ReaderRoute(noteId = id)) },
             )
         }
 

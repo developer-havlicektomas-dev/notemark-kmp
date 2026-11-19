@@ -18,12 +18,6 @@ object RegisterRoute
 object NotesRoute
 
 @Serializable
-data class NoteDetailRoute(
-    val noteId: String,
-    val isNew: Boolean = false,
-)
-
-@Serializable
 data class ReaderRoute(
     val noteId: String,
 )

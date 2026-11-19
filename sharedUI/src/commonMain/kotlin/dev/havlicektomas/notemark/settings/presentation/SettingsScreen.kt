@@ -1,5 +1,7 @@
 package dev.havlicektomas.notemark.settings.presentation
 
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.centeredMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -107,7 +109,8 @@ fun SettingsScreen(
 
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxHeight()
+                    .centeredMaxWidth()
                     .padding(horizontal = 16.dp),
             ) {
                 if (!state.isOnline) {

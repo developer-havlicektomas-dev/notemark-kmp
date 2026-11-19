@@ -1,5 +1,6 @@
 package dev.havlicektomas.notemark.auth.presentation.landing
 
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.centeredMaxWidth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,7 +47,7 @@ fun LandingScreen(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
+                .centeredMaxWidth()
                 .padding(horizontal = 28.dp),
             verticalArrangement = Arrangement.Center,
         ) {
@@ -67,7 +68,7 @@ fun LandingScreen(
         }
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .centeredMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 36.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),

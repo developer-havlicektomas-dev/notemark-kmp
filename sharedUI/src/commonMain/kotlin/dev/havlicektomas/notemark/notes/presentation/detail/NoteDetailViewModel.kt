@@ -66,8 +66,8 @@ class NoteDetailViewModel(
 ) : ViewModel() {
 
     // Type-safe nav stores route properties under their declared names.
-    private val noteId: String = savedStateHandle.get<String>("noteId").orEmpty()
-    private val isNew: Boolean = savedStateHandle.get<Boolean>("isNew") ?: false
+    private val noteId: String = savedStateHandle.get<String>(ARG_NOTE_ID).orEmpty()
+    private val isNew: Boolean = savedStateHandle.get<Boolean>(ARG_IS_NEW) ?: false
 
     private var createdAt: Instant = Clock.System.now()
 
@@ -267,8 +267,12 @@ class NoteDetailViewModel(
         )
     }
 
-    private companion object {
+    companion object {
+        /** SavedStateHandle keys; set by NotesListDetailRoot. */
+        const val ARG_NOTE_ID = "noteId"
+        const val ARG_IS_NEW = "isNew"
+
         /** Within the 500–1000ms window the M4 spec asks for. */
-        const val AUTOSAVE_DEBOUNCE_MS = 800L
+        private const val AUTOSAVE_DEBOUNCE_MS = 800L
     }
 }

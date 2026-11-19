@@ -1,5 +1,6 @@
 package dev.havlicektomas.notemark.auth.presentation.login
 
+import dev.havlicektomas.notemark.core.presentation.designsystem.layout.centeredMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -98,7 +99,9 @@ fun LoginScreen(
                 onNavigateBack = { onAction(LoginAction.OnBackClick) },
             )
             Column(
-                modifier = Modifier.padding(horizontal = 22.dp),
+                modifier = Modifier
+                    .centeredMaxWidth()
+                    .padding(horizontal = 22.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Spacer(Modifier.height(8.dp))
